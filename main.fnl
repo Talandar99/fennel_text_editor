@@ -1,6 +1,9 @@
 #!/usr/bin/env fennel
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; variables
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (local cursor-position {:x 7 :y 2})
 (var file-line-count 0)
 (fn get-terminal-size []
@@ -10,9 +13,18 @@
 (local (terminal-width terminal-height) (get-terminal-size))
 (var file-content {})
 (var line-count-padding 0)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; terminal non block mode
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (fn set-non-blocking-mode [] (os.execute "stty -icanon -echo"))
 (fn reset-terminal-mode [] (os.execute "stty icanon echo"))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; exit
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (fn exit-zero [] (io.write "\027[2J\027[H") (reset-terminal-mode) (os.exit 0))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; handling keys
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (fn handle-key-press [key]
   (if (= key "\027") (exit-zero)
       (= key :h) (set cursor-position.x (- cursor-position.x 1))
@@ -23,22 +35,16 @@
   (when (< cursor-position.x 5) (set cursor-position.x 5))
   (when (> cursor-position.y file-line-count)
     (set cursor-position.y (+ file-line-count 1))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; math
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (fn count-digits [number]
   (var count 0)
   (while (not= number 0)
     (set-forcibly! number (math.floor (/ number 10)))
     (set count (+ count 1)))
   count)
-(fn readfile []
-  (when (< (length arg) 1) (print "missing filename") (exit-zero))
-  (local filename (. arg 1))
-  (local file (io.open filename :r))
-  (if file (let [lines {}]
-             (each [line (file:lines)] (table.insert lines line)
-               (set file-line-count (+ file-line-count 1)))
-             (set file-content lines)
-             (set line-count-padding (+ (count-digits file-line-count) 1))
-             (file:close)) (print (.. "Can't open" filename))))
+
 (fn count-digit-difference [number1 number2]
   (var count1 0)
   (var count2 0)
@@ -51,6 +57,23 @@
     (set temp2 (math.floor (/ temp2 10)))
     (set count2 (+ count2 1)))
   (math.abs (- count1 count2)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; readfile
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(fn readfile []
+  (when (< (length arg) 1) (print "missing filename") (exit-zero))
+  (local filename (. arg 1))
+  (local file (io.open filename :r))
+  (if file (let [lines {}]
+             (each [line (file:lines)] (table.insert lines line)
+               (set file-line-count (+ file-line-count 1)))
+             (set file-content lines)
+             (set line-count-padding (+ (count-digits file-line-count) 1))
+             (file:close)) (print (.. "Can't open" filename))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; draw
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (fn draw []
   (let [lines file-content]
     (each [i line (ipairs lines)]
@@ -77,10 +100,16 @@
         (print (.. "t height:        " terminal-height))
         (print (.. "t width:         " terminal-width))
         (print (.. "file line count: " file-line-count))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;init
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (fn init [] (set-non-blocking-mode) (io.write "\027[2J\027[H") (readfile)
   (print (.. "t height:        " terminal-height))
   (print (.. "t width:         " terminal-width))
   (print (.. "file line count: " file-line-count)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; main
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (fn main []
   (init)
   (while true (io.write "\027[2J\027[H") (draw)
