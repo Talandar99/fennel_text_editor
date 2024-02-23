@@ -6,4 +6,5 @@ modal text editor written in fennel
 ./main.fnl
 ```
 ## dependancies
+- fennel compiler
 - lua
