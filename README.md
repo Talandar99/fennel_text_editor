@@ -1,9 +1,9 @@
-# lua based text editor
+# fennel based text editor
 
-modal text editor written in lua
+modal text editor written in fennel
 ## how to run
 ```
-./main.lua
+./main.fnl
 ```
 ## dependancies
 - lua
